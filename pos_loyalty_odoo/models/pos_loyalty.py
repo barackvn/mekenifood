@@ -92,30 +92,30 @@ class pos_redeem_rule(models.Model):
 
 	@api.onchange('max_amt','min_amt')
 	def _check_amt(self):
-		if (self.max_amt !=0):
-			if(self.min_amt > self.max_amt):
-				msg = _("Minimum Point should not larger than Maximum Point")
-				raise Warning(msg) 
+		if (self.max_amt != 0) and (self.min_amt > self.max_amt):
+			msg = _("Minimum Point should not larger than Maximum Point")
+			raise Warning(msg)
 		return
 
 	@api.onchange('reward_amt')
 	def _check_reward_amt(self):
-		if self.reward_amt !=0:
-			if self.reward_amt <= 0:			
-				msg = _("Reward amount should not zero or less than zero")
-				raise Warning(msg) 
+		if self.reward_amt != 0 and self.reward_amt <= 0:
+			msg = _("Reward amount should not zero or less than zero")
+			raise Warning(msg)
 		return
 
 	@api.constrains('min_amt','max_amt')
 	def _check_points(self):
 		for line in self:
 			record = self.env['pos.redeem.rule'].search([('loyality_id','=',line.loyality_id.id)])
-			for rec in record :
-				if line.id != rec.id:
-					if (rec.min_amt <= line.min_amt  <= rec.max_amt) or (rec.min_amt <=line.max_amt  <= rec.max_amt):
-						msg = _("You can not create Redemption Rule with same points range.")
-						raise Warning(msg) 
-						return
+			for rec in record:
+				if (
+					line.id != rec.id
+					and (rec.min_amt <= line.min_amt <= rec.max_amt)
+					or (rec.min_amt <= line.max_amt <= rec.max_amt)
+				):
+					msg = _("You can not create Redemption Rule with same points range.")
+					raise Warning(msg)
 
 
 class pos_loyalty_history(models.Model):
@@ -139,14 +139,21 @@ class pos_order(models.Model):
 	def create_from_ui(self, orders, draft=False):
 		order_ids = super(pos_order, self).create_from_ui(orders, draft=False)
 		loyalty_history_obj = self.env['pos.loyalty.history']
-		today_date = datetime.today().date() 
-		loyalty_setting = self.env['pos.loyalty.setting'].sudo().search([('active','=',True),('issue_date', '<=', today_date ),
-							('expiry_date', '>=', today_date )])	
-		if loyalty_setting:	
+		today_date = datetime.now().date()
+		if (
+			loyalty_setting := self.env['pos.loyalty.setting']
+			.sudo()
+			.search(
+				[
+					('active', '=', True),
+					('issue_date', '<=', today_date),
+					('expiry_date', '>=', today_date),
+				]
+			)
+		):
 			for order_id in order_ids:
 				try:
-					pos_order_id = self.browse(order_id.get('id'))
-					if pos_order_id:
+					if pos_order_id := self.browse(order_id.get('id')):
 						ref_order = [o['data'] for o in orders if o['data'].get('name') == pos_order_id.pos_reference]
 						for order in ref_order:
 							cust_loyalty = pos_order_id.partner_id.loyalty_points1 + order.get('loyalty')
@@ -162,7 +169,7 @@ class pos_order(models.Model):
 									'points': order_loyalty,
 								}
 								loyalty_history = loyalty_history_obj.create(vals)	
-														
+
 							if order.get('redeem_done') == True:
 								vals = {
 									'order_id':pos_order_id.id,

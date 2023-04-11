@@ -20,14 +20,12 @@ class pos_session(models.Model):
         u_price = 0
         dis = 0
         total_dis = 0
-        tax_amount = 0
         for i in discounts:
             qty = i.get('quantity')
             u_price = i.get('price_unit')
             dis = i.get('discount')
             total_dis += (u_price * qty) * dis / 100
-        for j in taxes:
-            tax_amount += j.get('tax_amount')
+        tax_amount = sum(j.get('tax_amount') for j in taxes)
         new_res = {'session_all_payments': result.get('payments'),
                    'session_discounts': total_dis,
                    'session_taxes': tax_amount}
@@ -50,7 +48,7 @@ class pos_session(models.Model):
                 'qty': product_line['qty'],
                 'sales': product_line['price_subtotal'],
             })
-            new_res.update({'top_selling_products': top_sell_prod})
+            new_res['top_selling_products'] = top_sell_prod
         # display data by Category
         if data.get('display_category_product'):
             categ_wise_total = {}
@@ -58,10 +56,10 @@ class pos_session(models.Model):
                 product_id = self.env['product.product'].browse(product_line['product_id'][0])
                 categ_id = product_id.categ_id
                 if categ_id not in categ_wise_total:
-                    categ_wise_total.update({categ_id: product_line['price_subtotal']})
+                    categ_wise_total[categ_id] = product_line['price_subtotal']
                 else:
                     categ_wise_total[categ_id] += product_line['price_subtotal']
-            new_res.update({'display_category_product':categ_wise_total})
+            new_res['display_category_product'] = categ_wise_total
         return new_res
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

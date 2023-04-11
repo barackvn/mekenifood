@@ -37,8 +37,7 @@ class PosOrder(models.Model):
     @api.depends('date_order')
     def compute_order_date_time(self):
         for rec in self:
-            date_time = rec.date_order
-            if date_time:
+            if date_time := rec.date_order:
                 rec.order_date = date_time.date()
                 user_time_zone = pytz.timezone(self.env.user.partner_id.tz)
                 user_time = pytz.utc.localize(date_time, is_dst=False)
