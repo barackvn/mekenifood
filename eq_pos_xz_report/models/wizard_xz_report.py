@@ -23,7 +23,9 @@ class wizard_xz_report(models.TransientModel):
     def get_data(self):
         data = self.read()[0]
         domain = []
-        if all([not data.get(fld) for fld in ['start_date', 'end_date', 'session_ids']]):
+        if all(
+            not data.get(fld) for fld in ['start_date', 'end_date', 'session_ids']
+        ):
             raise ValidationError(_("Please select at least one criteria to print report."))
         if self.session_ids:
             domain += [('id', 'in', self.session_ids.ids)]

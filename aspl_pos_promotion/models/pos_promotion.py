@@ -65,9 +65,7 @@ class PosPromotion(models.Model):
     def default_get(self, fields_list):
         res = super(PosPromotion, self).default_get(fields_list)
         days = self.env['day.week'].search([])
-        list_day = []
-        for rec in days:
-            list_day.append(rec.id)
+        list_day = [rec.id for rec in days]
         res['day_of_week_ids'] = [(6, 0, list_day)]
         return res
 
